@@ -1,4 +1,4 @@
-### Curso de Clean Code e Clean Architecture - Rodrigo Branas - Checkout
+### Curso de Clean Code e Clean Architecture - Rodrigo Branas - Service Checkout
 
 Curso do Rodrigo Branas sobre Microservices com TypeScript e Clean Code, Refactoring, TDD, OO, Ports and Adapters, Clean Architecture, Domain-Driven Design, Design Patterns, SOLID, Event-Driven Architecture e CQRS.
 
@@ -12,6 +12,11 @@ Curso do Rodrigo Branas sobre Microservices com TypeScript e Clean Code, Refacto
 #### Descrição
 
 Curso do Rodrigo Branas sobre Microservices com TypeScript e Clean Code, Refactoring, TDD, OO, Ports and Adapters, Clean Architecture, Domain-Driven Design, Design Patterns, SOLID, Event-Driven Architecture e CQRS.
+
+---
+
+#### Repositório Pai
+https://github.com/alcir-junior-caju/study-ts-node-branas-clean-code-and-clean-architecture
 
 ---
 
