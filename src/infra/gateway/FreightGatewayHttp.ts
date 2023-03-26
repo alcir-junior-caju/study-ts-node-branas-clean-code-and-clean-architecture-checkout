@@ -8,7 +8,7 @@ export default class FreightGatewayHttp implements FreightGateway {
 
   async calculateFreight(input: Input) {
     const response = await this.httpClient.post(
-      "http://localhost:3013/calculateFreight",
+      "http://localhost:3011/calculateFreight",
       input
     );
     return response;

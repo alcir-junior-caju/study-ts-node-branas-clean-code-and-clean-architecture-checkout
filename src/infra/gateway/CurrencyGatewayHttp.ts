@@ -6,7 +6,7 @@ export default class CurrencyGatewayHttp implements CurrencyGateway {
 
   async getCurrencies() {
     const response = await this.httpClient.get(
-      "http://localhost:3013/currencies"
+      "http://localhost:3010/currencies"
     );
     return response;
   }
