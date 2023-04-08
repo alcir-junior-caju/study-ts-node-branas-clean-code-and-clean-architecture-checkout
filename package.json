@@ -12,13 +12,15 @@
     "cors": "^2.8.5",
     "axios": "^1.2.6",
     "pg-promise": "^11.2.0",
-    "sinon": "^15.0.1"
+    "sinon": "^15.0.1",
+    "amqplib": "^0.10.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.13",
     "@types/sinon": "^10.0.13",
     "@types/express": "^4.17.13",
     "@types/jest": "^29.2.6",
+    "@types/amqplib": "^0.10.1",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
     "eslint": "^8.18.0",
