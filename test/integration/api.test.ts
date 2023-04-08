@@ -102,7 +102,7 @@ test("Deve criar um pedido com 1 produto calculando o frete", async function () 
   const response = await axios.post("http://localhost:3015/checkout", input);
   const output = response.data;
   expect(output.freight).toBe(90);
-  expect(output.total).toBe(3015);
+  expect(output.total).toBe(3000);
 });
 
 test("Não deve criar um pedido se o produto tiver alguma dimensão negativa", async function () {
