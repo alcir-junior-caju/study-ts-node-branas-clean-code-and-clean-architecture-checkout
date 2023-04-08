@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import sinon from "sinon";
 
+import AuthDecorator from "../../src/application/decorator/AuthDecorator";
+import LogDecorator from "../../src/application/decorator/LogDecorator";
 import CurrencyGateway from "../../src/application/gateway/CurrencyGateway";
 import CouponRepository from "../../src/application/repository/CouponRepository";
 import OrderRepository from "../../src/application/repository/OrderRepository";
@@ -13,6 +15,8 @@ import PgPromise from "../../src/infra/database/PgPromiseAdapter";
 import CatalogGatewayHttp from "../../src/infra/gateway/CatalogGatewayHttp";
 import CurrencyGatewayHttp from "../../src/infra/gateway/CurrencyGatewayHttp";
 import AxiosAdapter from "../../src/infra/http/AxiosAdapter";
+import Queue from "../../src/infra/queue/Queue";
+import RabbitMQAdapter from "../../src/infra/queue/RabbitMQAdapter";
 import CouponRepositoryDatabase from "../../src/infra/repository/CouponRepositoryDatabase";
 import OrderRepositoryDatabase from "../../src/infra/repository/OrderRepositoryDatabase";
 import ProductRepositoryDatabase from "../../src/infra/repository/ProductRepositoryDatabase";
@@ -23,10 +27,13 @@ let connection: Connection;
 let productRepository: ProductRepository;
 let couponRepository: CouponRepository;
 let orderRepository: OrderRepository;
+let queue: Queue;
 
-beforeEach(function () {
+beforeEach(async function () {
   connection = new PgPromise();
   const httpClient = new AxiosAdapter();
+  queue = new RabbitMQAdapter();
+  await queue.connect();
   const currencyGateway = new CurrencyGatewayHttp(httpClient);
   productRepository = new ProductRepositoryDatabase(connection);
   couponRepository = new CouponRepositoryDatabase(connection);
@@ -35,7 +42,11 @@ beforeEach(function () {
     currencyGateway,
     productRepository,
     couponRepository,
-    orderRepository
+    orderRepository,
+    undefined,
+    undefined,
+    undefined,
+    queue
   );
   getOrder = new GetOrder(orderRepository);
 });
@@ -138,8 +149,8 @@ test("Deve criar um pedido com 1 produto calculando o frete", async function () 
     to: "88015600",
   };
   const output = await checkout.execute(input);
-  expect(output.freight).toBe(90);
-  expect(output.total).toBe(3090);
+  expect(output.freight).toBe(67.33996002073468);
+  expect(output.total).toBe(3067.339960020735);
 });
 
 test("Não deve criar um pedido se o produto tiver alguma dimensão negativa", async function () {
@@ -271,4 +282,53 @@ test("Deve criar um pedido e verificar o código de série", async function () {
   const output = await getOrder.execute(uuid);
   expect(output.code).toBe("202300000001");
   stub.restore();
+});
+
+test("Deve criar um pedido com 3 produtos com cep", async function () {
+  const uuid = crypto.randomUUID();
+  const input = {
+    uuid,
+    cpf: "407.302.170-27",
+    items: [{ idProduct: 1, quantity: 1 }],
+    from: "22060030",
+    to: "88015600",
+  };
+  const output = await checkout.execute(input);
+  expect(output.freight).toBe(22.446653340244893);
+  expect(output.total).toBe(1022.446653340244893);
+});
+
+test("Deve criar um pedido com 3 produtos com cupom de desconto somente se estiver autenticado", async function () {
+  const decoratedCheckout = new AuthDecorator(new LogDecorator(checkout));
+  const input = {
+    cpf: "407.302.170-27",
+    items: [
+      { idProduct: 1, quantity: 1 },
+      { idProduct: 2, quantity: 1 },
+      { idProduct: 3, quantity: 3 },
+    ],
+    coupon: "VALE20",
+    token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvYW9AZ21haWwuY29tIiwiaWF0IjoxNjc3Njc1NjAwMDAwLCJleHBpcmVzSW4iOjEwMDAwMDB9.nPHGoaoMLLpmDS61-njfqX6G5ZvwT3Y5U71uOXGbRYY",
+  };
+  const output = await decoratedCheckout.execute(input);
+  expect(output.total).toBe(4872);
+});
+
+test("Não deve funcionar se o usuário não estiver autenticado", async function () {
+  const decoratedCheckout = new AuthDecorator(new LogDecorator(checkout));
+  const input = {
+    cpf: "407.302.170-27",
+    items: [
+      { idProduct: 1, quantity: 1 },
+      { idProduct: 2, quantity: 1 },
+      { idProduct: 3, quantity: 3 },
+    ],
+    coupon: "VALE20",
+    token:
+      "eyJhbGciOiInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvYW9AZ21haWwuY29tIiwiaWF0IjoxNjc3Njc1NjAwMDAwLCJleHBpcmVzSW4iOjEwMDAwMDB9.nPHGoaoMLLpmDS61-njfqX6G5ZvwT3Y5U71uOXGbRYY",
+  };
+  await expect(() => decoratedCheckout.execute(input)).rejects.toThrow(
+    new Error("Auth error")
+  );
 });

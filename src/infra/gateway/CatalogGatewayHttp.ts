@@ -7,7 +7,7 @@ export default class CatalogGatewayHttp implements CatalogGateway {
 
   async getProducts(): Promise<Product[]> {
     const response = await this.httpClient.get(
-      "http://localhost:3013/products"
+      "http://localhost:3012/products"
     );
     const products: Product[] = [];
     for (const productData of response) {
@@ -29,7 +29,7 @@ export default class CatalogGatewayHttp implements CatalogGateway {
 
   async getProduct(idProduct: number): Promise<Product> {
     const productData = await this.httpClient.get(
-      `http://localhost:3013/products/${idProduct}`
+      `http://localhost:3012/products/${idProduct}`
     );
     return new Product(
       productData.idProduct,

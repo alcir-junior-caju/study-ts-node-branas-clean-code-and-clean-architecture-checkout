@@ -8,7 +8,6 @@ type Input = {
   from?: string;
   to?: string;
 };
-
 export default class CLIController {
   constructor(readonly handler: CLIHandler, readonly checkout: Checkout) {
     const input: Input = { cpf: "", items: [] };

@@ -2,15 +2,19 @@ import CurrencyTable from "../../domain/entity/CurrencyTable";
 import Order from "../../domain/entity/Order";
 import CatalogGatewayHttp from "../../infra/gateway/CatalogGatewayHttp";
 import FreightGatewayHttp from "../../infra/gateway/FreightGatewayHttp";
+import StockGatewayHttp from "../../infra/gateway/StockGatewayHttp";
 import AxiosAdapter from "../../infra/http/AxiosAdapter";
+import Queue from "../../infra/queue/Queue";
 import CatalogGateway from "../gateway/CatalogGateway";
 import CurrencyGateway from "../gateway/CurrencyGateway";
 import FreightGateway, {
   Input as FreightInput,
 } from "../gateway/FreightGateway";
+import StockGateway from "../gateway/StockGateway";
 import CouponRepository from "../repository/CouponRepository";
 import OrderRepository from "../repository/OrderRepository";
 import ProductRepository from "../repository/ProductRepository";
+import Usecase from "./Usecase";
 
 type Input = {
   uuid?: string;
@@ -26,7 +30,7 @@ type Output = {
   freight: number;
 };
 
-export default class Checkout {
+export default class Checkout implements Usecase {
   constructor(
     readonly currencyGateway: CurrencyGateway,
     readonly productRepository: ProductRepository,
@@ -37,7 +41,11 @@ export default class Checkout {
     ),
     readonly catalogGateway: CatalogGateway = new CatalogGatewayHttp(
       new AxiosAdapter()
-    )
+    ),
+    readonly stockGateway: StockGateway = new StockGatewayHttp(
+      new AxiosAdapter()
+    ),
+    readonly queue?: Queue
   ) {}
 
   async execute(input: Input): Promise<Output> {
@@ -52,10 +60,13 @@ export default class Checkout {
       sequence,
       new Date()
     );
-    const freightInput: FreightInput = { items: [] };
+    const freightInput: FreightInput = {
+      items: [],
+      from: input.from,
+      to: input.to,
+    };
     if (input.items) {
       for (const item of input.items) {
-        // const product = await this.productRepository.getProduct(item.idProduct);
         const product = await this.catalogGateway.getProduct(item.idProduct);
         order.addItem(product, item.quantity);
         freightInput.items.push({
@@ -80,6 +91,9 @@ export default class Checkout {
     }
     const total = order.getTotal();
     await this.orderRepository.save(order);
+    if (this.queue) {
+      await this.queue.publish("orderPlaced", input);
+    }
     return {
       total,
       freight,
